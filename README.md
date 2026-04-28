@@ -41,3 +41,25 @@ Train a baseline model:
 - Use `*_bin` features as ordered integers
 - Calibrate probabilities (LogLoss-heavy metric)
 
+### Why this is interesting (and non-trivial)
+- **Exogenous drivers**: surges are often caused by localized precipitation you don’t observe directly—so you’re learning *precursors* (flashiness, rising volatility), not the storm itself.
+- **Station heterogeneity**: “big river” vs “small creek” is not the point; thresholds are station-relative, so the model must generalize across scales.
+- **Regime shift**: later years are held out; seasonality shortcuts and station memorization get punished.
+- **Multi-horizon calibration**: 3-day vs 7-day risk has different base rates and noise—calibration by `horizon_d` often matters.
+
+### Target intuition (plain English)
+The label answers:
+> “Starting tomorrow, will this gauge experience a surprisingly large jump in flow at least once within the next \(h\) days?”
+
+The “surge magnitude” is measured on a log scale (\(\log(q+1)\)) and compared to a **train-derived 90th percentile** threshold (station-specific when enough history exists; global fallback otherwise).
+
+### Common pitfalls
+- **Random CV leakage**: random splits leak station-season patterns; use blocked time validation.
+- **Station overfit**: `station_token` can dominate; regularize and sanity-check by ablation.
+- **Miscalibration**: ranking can look fine, but LogLoss-heavy scoring punishes overconfident predictions.
+
+### Source
+USGS NWIS Water Services:
+- `https://waterservices.usgs.gov/`
+- Daily Values endpoint: `https://waterservices.usgs.gov/nwis/dv/`
+
